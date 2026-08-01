@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f7f5f2; --panel:#ffffff; --border:#eae6e0; --text:#20180f; --muted:#7a7267;
+    --orange:#ff6a13; --orange-soft:#fff1e6; --black:#1a1512;
+    --good:#1a8f4c; --warn:#d97706; --bad:#d1372c;
+    --radius:12px;
+    --ace:#f4c20d; --cce:#e8578f; --mnp:#d1372c; --com:#2e6ee8; --pro:#8c4fd6; --qab:#2f9e58; --de:#1a1512;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    font-size:14px;
+  }
+  #app{display:flex; min-height:100vh;}
+
+  #sidebar{
+    width:230px; flex:0 0 230px; background:var(--black); color:#fff;
+    padding:18px 12px; position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto;
+  }
+  #sidebar h1{font-size:16px; margin:4px 8px 1px; font-weight:800; color:#fff; letter-spacing:.01em;}
+  #sidebar h1 span{color:var(--orange);}
+  #sidebar .sub{font-size:10.5px; color:#9c9184; margin:0 8px 18px; text-transform:uppercase; letter-spacing:.05em;}
+  .nav-group{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:#8b8175; margin:16px 8px 6px; font-weight:700;}
+  .nav-btn{
+    display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:8px 10px;
+    border:none; background:transparent; border-radius:8px; font-size:12.5px; color:#e8e3db;
+    cursor:pointer; margin-bottom:2px;
+  }
+  .nav-btn:hover{background:rgba(255,255,255,.08);}
+  .nav-btn.active{background:var(--orange); color:#1a1512; font-weight:700;}
+
+  #main{flex:1; min-width:0; padding:20px 26px 60px;}
+  #topbar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:16px;
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;
+    border-top:3px solid var(--orange);
+  }
+  .filter-block{display:flex; flex-direction:column; gap:4px; min-width:145px;}
+  .filter-block label{font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); font-weight:700;}
+  .chipbox{
+    border:1px solid var(--border); border-radius:8px; padding:6px; max-height:76px; overflow-y:auto;
+    display:flex; flex-wrap:wrap; gap:4px; background:#fbfaf8; min-width:150px;
+  }
+  .chip{
+    font-size:11px; padding:3px 8px; border-radius:100px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; user-select:none; white-space:nowrap;
+  }
+  .chip.on{background:var(--orange); border-color:var(--orange); color:#fff; font-weight:600;}
+
+  .dropdown{position:relative;}
+  .dropdown-btn{border:1px solid var(--border); border-radius:8px; background:#fff; padding:6px 10px;
+    font-size:11.5px; cursor:pointer; min-width:150px; max-width:190px; text-align:left; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .dropdown-btn:hover{border-color:var(--orange);}
+  .dropdown-btn:after{content:'▾'; float:right; color:var(--muted); margin-left:6px;}
+  .dropdown-panel{display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:30; background:#fff;
+    border:1px solid var(--border); border-radius:8px; padding:6px; min-width:230px; max-height:230px;
+    overflow-y:auto; box-shadow:0 8px 22px rgba(0,0,0,.14);}
+  .dropdown-panel.open{display:block;}
+  .dd-item{display:flex; align-items:center; gap:6px; font-size:12px; padding:5px 6px; border-radius:6px; cursor:pointer;}
+  .dd-item:hover{background:var(--orange-soft);}
+  .dd-item input{margin:0;}
+  .dd-empty{font-size:11.5px; color:var(--muted); padding:6px;}
+  #resetFilters{
+    border:1px solid var(--border); background:#fff; border-radius:8px; padding:8px 12px; font-size:12px;
+    cursor:pointer; color:var(--muted); height:32px;
+  }
+  #resetFilters:hover{color:var(--text); border-color:var(--orange);}
+  #nCount{font-size:11.5px; color:var(--muted); margin-left:auto; align-self:center;}
+
+  .area-badge{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; margin-left:10px; color:#fff; vertical-align:middle;}
+  h2.page-title{font-size:19px; margin:2px 0 3px; display:flex; align-items:center;}
+  p.page-desc{color:var(--muted); font-size:12.5px; margin:0 0 18px;}
+  p.assume{color:var(--warn); font-size:11.5px; margin:0 0 14px; background:#fff8ec; border:1px solid #ffe4b5; padding:6px 10px; border-radius:8px;}
+
+  .grid{display:grid; gap:14px;}
+  .grid.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:16px;}
+  .grid.charts2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr));}
+  .grid.charts1{grid-template-columns:1fr;}
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;}
+  .kpi .label{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px; font-weight:700;}
+  .kpi .value{font-size:25px; font-weight:800;}
+  .kpi .sub{font-size:11px; color:var(--muted); margin-top:4px;}
+
+  .chart-card h3{font-size:13px; margin:0 0 2px; font-weight:700;}
+  .chart-card .note{font-size:11px; color:var(--muted); margin:0 0 10px;}
+  .chart-wrap{position:relative; height:270px;}
+  .chart-wrap.tall{height:340px;}
+
+  .freqlist{list-style:none; padding:0; margin:0; font-size:12px;}
+  .freqlist li{display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px dashed var(--border);}
+  .freqlist li:last-child{border-bottom:none;}
+  .freqlist .bar{flex:1; background:var(--orange-soft); border-radius:4px; height:8px; margin:0 8px; position:relative; top:2px; overflow:hidden;}
+  .freqlist .bar>span{display:block; height:100%; background:var(--orange);}
+
+  .page{display:none;} .page.active{display:block;}
+  .loading, .empty{color:var(--muted); font-size:13px; padding:40px; text-align:center;}
+  footer.note{color:var(--muted); font-size:11px; margin-top:26px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h1>Fluxo<span>·</span>PCO</h1>
+    <p class="sub">Clima Organizacional</p>
+
+    <div class="nav-group">Coordenação</div>
+    <button class="nav-btn active" data-page="c-alinh">Alinhamento</button>
+    <button class="nav-btn" data-page="c-suporte">Suporte e Conforto</button>
+    <button class="nav-btn" data-page="c-ambiente">Ambiente e Feedback</button>
+    <button class="nav-btn" data-page="c-motiv">Motivação</button>
+    <button class="nav-btn" data-page="c-carreira">Carreira e Cultura</button>
+    <button class="nav-btn" data-page="c-coords">Avaliação dos Coordenadores</button>
+
+    <div class="nav-group">Diretoria</div>
+    <button class="nav-btn" data-page="d-ambiente">Ambiente &amp; Reconhecimento</button>
+    <button class="nav-btn" data-page="d-semanais">Semanais &amp; Avaliação</button>
+
+    <div class="nav-group">Missão (DE + Tropa)</div>
+    <button class="nav-btn" data-page="m-de">Diretoria Executiva</button>
+    <button class="nav-btn" data-page="m-tropa">Tropa</button>
+
+    <div class="nav-group">Geral da Fluxo</div>
+    <button class="nav-btn" data-page="g-dev">Desenvolvimento &amp; Carreira</button>
+    <button class="nav-btn" data-page="g-motiv">Motivação, Saída &amp; Mentorias</button>
+    <button class="nav-btn" data-page="g-externa">Relação Externa</button>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <div class="filter-block">
+        <label>Ciclo (PCO)</label>
+        <div class="chipbox" id="f-ciclo"></div>
+      </div>
+      <div class="filter-block" id="f-pame-block">
+        <label>PAME de entrada</label>
+        <div class="chipbox" id="f-pame"></div>
+      </div>
+      <div class="filter-block" id="f-area-block">
+        <label id="f-area-label">Coordenação</label>
+        <div class="chipbox" id="f-area"></div>
+      </div>
+      <div class="filter-block" id="f-cargo-block">
+        <label id="f-cargo-label">Cargo</label>
+        <div class="chipbox" id="f-cargo"></div>
+      </div>
+      <div class="filter-block">
+        <label>Gênero</label>
+        <div class="dropdown" id="f-genero-dd"><button type="button" class="dropdown-btn" id="f-genero-btn">Todos</button><div class="dropdown-panel" id="f-genero-panel"></div></div>
+      </div>
+      <div class="filter-block">
+        <label>Orientação sexual</label>
+        <div class="dropdown" id="f-orient-dd"><button type="button" class="dropdown-btn" id="f-orient-btn">Todos</button><div class="dropdown-panel" id="f-orient-panel"></div></div>
+      </div>
+      <div class="filter-block">
+        <label>Raça</label>
+        <div class="dropdown" id="f-raca-dd"><button type="button" class="dropdown-btn" id="f-raca-btn">Todos</button><div class="dropdown-panel" id="f-raca-panel"></div></div>
+      </div>
+      <div class="filter-block">
+        <label>PCD</label>
+        <div class="dropdown" id="f-pcd-dd"><button type="button" class="dropdown-btn" id="f-pcd-btn">Todos</button><div class="dropdown-panel" id="f-pcd-panel"></div></div>
+      </div>
+      <div class="filter-block">
+        <label>Neuroatipicidade</label>
+        <div class="dropdown" id="f-neuro-dd"><button type="button" class="dropdown-btn" id="f-neuro-btn">Todos</button><div class="dropdown-panel" id="f-neuro-panel"></div></div>
+      </div>
+      <button id="resetFilters">Limpar filtros</button>
+      <div id="nCount"></div>
+    </div>
+
+    <div id="content"><div class="loading">Carregando respostas das planilhas do PCO…</div></div>
+    <footer class="note" id="footNote"></footer>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+(function(){
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+var CYCLES = [
+  { id:'out25', label:'Outubro/25', fileId:'1ocA2nfAoUWmRs7i3Zgp9HfZbreWIBmemnwY2D0XeFxU' },
+  { id:'jan26', label:'Janeiro/26', fileId:'1bdrXC4-O0yO4WdppyRJDpxl-VU7n9UM4kF0hsK27Ocs' },
+  { id:'abril26', label:'Abril/26', fileId:'1h4F96jgigS4H7UCLIyyNN9nBB17hDW0MDfX4vTdUNg0' },
+  { id:'julho26', label:'Julho/26', fileId:'1EVwf74QJnyDhgW3lsVpSjBNUA3aljP4derzCg7jRATU' }
+];
+// (versão pública: não usa o conector do Cowork, busca as planilhas via fetch())
+var COORD_LIST = ['ACE','CCE','MNP','PRO','QAB'];              // coordenações "de projeto"
+var COORD_ALL = ['ACE','CCE','MNP','PRO','QAB','COMERCIAL'];   // + comercial
+var COORD_COLOR = { ACE:'#f4c20d', CCE:'#e8578f', MNP:'#d1372c', COMERCIAL:'#2e6ee8', PRO:'#8c4fd6', QAB:'#2f9e58' };
+var COORD_DISPLAY = { ACE:'ACE', CCE:'CCE', MNP:'MNP', COMERCIAL:'COM', PRO:'PRO', QAB:'QAB' };
+var ORANGE = '#ff6a13';
+var DE_COLOR = '#1a1512';
+var DIRETORIAS = ['Adm-Fin','Gente & Gestão','Marketing e Vendas','Presidência','Diretoria de Projetos'];
+var DIR_PALETTE = ['#ff6a13','#2e6ee8','#8c4fd6','#2f9e58','#e8578f'];
+var CARGO_EXCLUDE_COORD = ['Suporte Tático'];
+
+/* ============================= CSV PARSER =============================== */
+function parseCSV(text){
+  var rows = []; var row = []; var field = ''; var inQuotes = false;
+  for (var i=0; i<text.length; i++){
+    var c = text[i];
+    if (inQuotes){
+      if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; } }
+      else { field += c; }
+    } else {
+      if (c === '"'){ inQuotes = true; }
+      else if (c === ','){ row.push(field); field=''; }
+      else if (c === '\r'){ }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else { field += c; }
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(function(r){ return !(r.length===1 && r[0]==='' ); });
+}
+function base64ToUtf8(b64){
+  var bin = atob(b64);
+  var bytes = new Uint8Array(bin.length);
+  for (var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+/* ============================= HEADER MATCH ============================= */
+function normH(h){ return (h||'').replace(/[–—‒]/g,'-').replace(/\s+/g,' ').trim(); } // normaliza en-dash/em-dash -> hífen (o formulário mistura os dois entre perguntas, ex: Q62.2)
+function findCol(headers, qPrefix, bracketIncludes){
+  for (var i=0;i<headers.length;i++){
+    var h = normH(headers[i]);
+    if (h.indexOf(qPrefix) === 0){
+      if (!bracketIncludes) return i;
+      if (h.indexOf(bracketIncludes) !== -1) return i;
+    }
+  }
+  return -1;
+}
+function findColContains(headers, substr){
+  for (var i=0;i<headers.length;i++){
+    if (normH(headers[i]).toLowerCase().indexOf(substr.toLowerCase()) !== -1) return i;
+  }
+  return -1;
+}
+
+/* ===================== LIKERT NORMALIZER (texto -> 1..4) ================= */
+var LIKERT_MAP = [
+  ['não tenho suporte',1],['tenho pouco suporte',2],['tenho um suporte razoavelmente bom',3],['tenho todo o suporte necessário',4],
+  ['nada confortável',1],['pouco confortável',2],['muito confortável',4],['confortável',3],
+  ['discordo completamente',1],['discordo parcialmente',2],['concordo parcialmente',3],['concordo completamente',4],
+  ['não me identifico',1],['pouco me identifico',2],['me identifico parcialmente',3],['me identifico completamente',4],
+  ['não me representa',1],['pouco me representa',2],['me representa parcialmente',3],['me representa completamente',4],
+  ['totalmente insatisfeito',1],['totalmente satisfeito',4],
+  ['muito insatisfeito',1],['bastante satisfeito',4],
+  ['bem insatisfeito',1],['muito satisfeito',4],
+  ['insuficiente',1],['péssimo',1],['ruim',2],['bom',3],['ótimo',4],['excelente',4],
+  ['nada feliz',1],['pouco feliz',2],['muito feliz',4],
+  ['muito desmotivado',1],['muito motivado',4],
+  ['não me sinto reconhecido',1],['devidamente reconhecido',4],
+  ['não recomendaria',1],['recomendaria',4],
+  ['menos motivado',1],['mais motivada',4],['mais motivado',4],
+  ['não me sinto integrado',1],['muito integrado',4],
+  ['nenhuma',1],['muitas',4],
+  ['impactam negativamente',1],['me fazem refletir',4],
+  ['não me motivam',1],['motivam bastante',4]
+];
+function likertValue(raw){
+  if (raw === undefined || raw === null) return NaN;
+  var s = String(raw).trim();
+  if (s === '') return NaN;
+  if (/^-?\d+([.,]\d+)?$/.test(s)) return parseFloat(s.replace(',','.'));
+  var low = s.toLowerCase();
+  for (var i=0;i<LIKERT_MAP.length;i++){ if (low.indexOf(LIKERT_MAP[i][0]) !== -1) return LIKERT_MAP[i][1]; }
+  return NaN;
+}
+/* trunca respostas descritivas longas em "Rótulo - explicação..." -> "Rótulo" */
+function shortLabel(raw){
+  if (!raw) return raw;
+  var s = String(raw).trim();
+  var m = s.split(/\s[-–]\s/);
+  return m[0].trim();
+}
+/* Some checkbox questions (PCD, Neurodivergência) join multiple chosen options in one cell as
+   "Sim, Rótulo - descrição longa (pode ter vírgulas)., Sim, Outro Rótulo - outra descrição.".
+   A naive split(',') shreds the long descriptions. Split only at boundaries right before a new
+   option starts ("Sim,"/"Não"/"Prefiro"), then keep just the short label of each option. */
+function splitCheckboxDesc(raw){
+  if (!raw) return [];
+  var parts = String(raw).split(/,\s*(?=Sim,|Não|Prefiro)/);
+  var out = [];
+  parts.forEach(function(p){
+    p = p.trim().replace(/\.+$/,'');
+    if (!p) return;
+    var m = p.match(/^Sim,\s*([^\-]+?)\s*-/);
+    var label = m ? m[1].trim() : p;
+    if (label) label = label.charAt(0).toUpperCase()+label.slice(1);
+    out.push(label);
+  });
+  return out;
+}
+
+/* ============================= DATA STATE ================================ */
+var STATE = { cycles:{}, filters:{ ciclo:{}, pame:{}, area:{}, diretoria:{}, cargo:{}, genero:{}, orient:{}, raca:{}, pcd:{}, neuro:{} }, charts:[] };
+function destroyCharts(){ STATE.charts.forEach(function(c){ try{ c.destroy(); }catch(e){} }); STATE.charts = []; }
+
+/* ============================= LOAD =======================================
+   Versão PÚBLICA (fora do Cowork): busca o CSV direto do Google Sheets via fetch().
+   Só funciona com a planilha compartilhada como "Qualquer pessoa com o link" (Leitor).
+   Usa o endpoint gviz/tq porque o /export?format=csv não libera CORS entre domínios. */
+function csvExportUrl(fileId){
+  return 'https://docs.google.com/spreadsheets/d/' + fileId + '/gviz/tq?tqx=out:csv&gid=0&t=' + Date.now();
+}
+function fetchWithTimeout(url, opts, ms){
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms);
+  return fetch(url, Object.assign({}, opts, { signal: controller.signal }))
+    .finally(function(){ clearTimeout(timer); });
+}
+function loadCycle(cfg){
+  return fetchWithTimeout(csvExportUrl(cfg.fileId), { credentials:'omit', cache:'no-store' }, 20000)
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      return r.text();
+    })
+    .then(function(csvText){
+      if (/^\s*<(!DOCTYPE|html)/i.test(csvText)){
+        throw new Error('a planilha não parece estar compartilhada como "Qualquer pessoa com o link"');
+      }
+      var table = parseCSV(csvText);
+      var headers = table.length ? table[0] : [];
+      var rows = table.slice(1).filter(function(r){ return r.some(function(v){return v && v.trim()!=='';}); });
+      return { id:cfg.id, label:cfg.label, headers:headers, rows:rows };
+    })
+    .catch(function(err){
+      var msg = (err && err.name === 'AbortError') ? 'tempo esgotado (20s) buscando a planilha' : String(err && err.message || err);
+      return { id:cfg.id, label:cfg.label, headers:[], rows:[], error: msg };
+    });
+}
+
+function buildIndex(cycle){
+  var h = cycle.headers;
+  cycle.col = {
+    pame: findCol(h,'Q1 -'),
+    area: findCol(h,'Q2 -'),
+    cargo: findCol(h,'Q3 -'),
+    diretoriaDE: findCol(h,'Q4 -'),
+    genero: findColContains(h,'identidade de gênero'),
+    orientacao: findColContains(h,'orientação sexual'),
+    raca: findColContains(h,'identidade étnico-racial'),
+    pcd: findColContains(h,'Pessoa com Deficiência'),
+    neuro: findColContains(h,'Neuroatipicidade'),
+    coordNegocia: findCol(h,'Q10 -'),
+    diretoriaBloco3: findCol(h,'Q9 -'),
+    direcionadoArea: findCol(h,'Q45 -'),
+
+    /* DE se autoavalia */
+    deSatisf: findCol(h,'Q5 -'),
+    deReconhec: findCol(h,'Q6 -'),
+    de_conf_expor: findCol(h,'Q7 -','[Expor suas dificuldades'),
+    de_conf_opAtiv: findCol(h,'Q7 -','[Opinar nas atividades'),
+    de_conf_opDisc: findCol(h,'Q7 -','[Opinar nas discussões'),
+    de_conf_ajuda: findCol(h,'Q7 -','[Pedir ajuda'),
+    deRelac: findCol(h,'Q8 -'),
+
+    /* DE é avaliada */
+    de18_rgs: findCol(h,'Q18 -'),
+    de19_motivacao: findCol(h,'Q19 -','[A diretoria consegue passar motivação'),
+    de19_opinioes: findCol(h,'Q19 -','[Considero que a Diretoria leva em conta opiniões'),
+    de19_decisoes: findCol(h,'Q19 -','[Consigo entender as decisões'),
+    de19_relacao: findCol(h,'Q19 -','[Considero que a Diretoria estabelece a relação'),
+    de19_positivas: findCol(h,'Q19 -','[Considero positivas as ações'),
+    de192_admfin: findCol(h,'Q19.2 -','[Diretoria Administrativo'),
+    de192_gg: findCol(h,'Q19.2 -','[Diretoria de Gente e Gestão'),
+    de192_mkt: findCol(h,'Q19.2 -','[Diretoria de Marketing e Vendas'),
+    de192_proj: findCol(h,'Q19.2 -','[Diretoria de Projetos'),
+    de192_pres: findCol(h,'Q19.2 -','[Presidência'),
+    de193_melhoria: findCol(h,'Q19.3 -'),
+
+    coord74_motivar: findCol(h,'Q74 -','[Capacidade de motivar'),
+    coord74_inclusao: findCol(h,'Q74 -','[Inclusão dos membros'),
+    coord74_lideranca: findCol(h,'Q74 -','[Exercício da liderança'),
+    coord74_relacao: findCol(h,'Q74 -','[Qualidade da relação'),
+    coord74_comunicacao: findCol(h,'Q74 -','[Clareza e eficácia'),
+    coord74_transparencia: findCol(h,'Q74 -','[Transparência nas ações'),
+    coord75_melhoria: findCol(h,'Q75 -'),
+
+    /* Tropa se autoavalia */
+    tropaSatisf: findCol(h,'Q12 -'),
+    tropaAuxilio: findCol(h,'Q13.2 -'),
+    tropa_conf_expor: findCol(h,'Q14 -','[Expor suas dificuldades'),
+    tropa_conf_opAtiv: findCol(h,'Q14 -','[Opinar nas atividades'),
+    tropa_conf_opDisc: findCol(h,'Q14 -','[Opinar nas discussões'),
+    tropa_conf_ajuda: findCol(h,'Q14 -','[Pedir ajuda'),
+    tropaRelac: findCol(h,'Q15 -'),
+
+    alinhComercial: findCol(h,'Q16 -'),
+    alinhComercialMelhoria: findCol(h,'Q16.2 -'),
+    alinhCliente: findCol(h,'Q17 -'),
+    alinhClienteMelhoria: findCol(h,'Q17.2 -'),
+
+    /* Bloco 2 (área) */
+    suporteMat1: findCol(h,'Q21 -','[Materiais'), suporteMem1: findCol(h,'Q21 -','[Membros'),
+    desempenho: findCol(h,'Q22 -'),
+    satArea1: findCol(h,'Q23 -'),
+    parceirosArea1: findCol(h,'Q24 -'),
+    motArea1: findCol(h,'Q25 -'),
+    reconArea1: findCol(h,'Q26 -'),
+    a2_conf_expor: findCol(h,'Q27 -','[Expor suas dificuldades'),
+    a2_conf_opAtiv: findCol(h,'Q27 -','[Opinar nas atividades'),
+    a2_conf_opDisc: findCol(h,'Q27 -','[Opinar nas discussões'),
+    a2_conf_ajuda: findCol(h,'Q27 -','[Pedir ajuda'),
+    relacArea1: findCol(h,'Q28 -'),
+    reuniaoArea1: findCol(h,'Q29 -'),
+    reuniaoMelhoria1: findCol(h,'Q29.2 -'),
+    avTecnica1: findCol(h,'Q30 -','[Capacidade técnica'),
+    avInterp1: findCol(h,'Q30 -','[Relacionamento Interpessoal'),
+    avCliente1: findCol(h,'Q30 -','[Foco no Cliente'),
+    avEngaj1: findCol(h,'Q30 -','[Engajamento dos membros'),
+    avAlinh1: findCol(h,'Q30 -','[Alinhamento entre os membros'),
+    avOrg1: findCol(h,'Q30 -','[Organização'),
+
+    /* Bloco 3 (DE / suporte tático — diretoria) */
+    d_acoes_mudancas: findCol(h,'Q32 -','[Estou conseguindo ver mudanças'),
+    d_acoes_definicao: findCol(h,'Q32 -','[Acredito que a etapa de definição'),
+    d_acoes_planos: findCol(h,'Q32 -','[Acredito que os responsáveis'),
+    d_acoes_colaborei: findCol(h,'Q32 -','[Colaborei para alcançar'),
+    suporteMat2: findCol(h,'Q33 -','[Materiais'), suporteMem2: findCol(h,'Q33 -','[Membros'),
+    satArea2: findCol(h,'Q35 -'),
+    d_melhoria: findCol(h,'Q36 -'),
+    parceirosArea2: findCol(h,'Q37 -'),
+    motArea2: findCol(h,'Q38 -'),
+    reconArea2: findCol(h,'Q39 -'),
+    a3_conf_expor: findCol(h,'Q40 -','[Expor suas dificuldades'),
+    a3_conf_opAtiv: findCol(h,'Q40 -','[Opinar nas atividades'),
+    a3_conf_opDisc: findCol(h,'Q40 -','[Opinar nas discussões'),
+    a3_conf_ajuda: findCol(h,'Q40 -','[Pedir ajuda'),
+    relacArea2: findCol(h,'Q41 -'),
+    reuniaoArea2: findCol(h,'Q42 -'),
+    reuniaoMelhoria2: findCol(h,'Q43 -'),
+    avTecnica2: findCol(h,'Q44 -','[Capacidade técnica'),
+    avInterp2: findCol(h,'Q44 -','[Relacionamento Interpessoal'),
+    avCliente2: findCol(h,'Q44 -','[Foco no Cliente'),
+    avEngaj2: findCol(h,'Q44 -','[Engajamento dos membros'),
+    avAlinh2: findCol(h,'Q44 -','[Alinhamento entre os membros'),
+    avOrg2: findCol(h,'Q44 -','[Organização'),
+
+    /* Direcionado */
+    suporteMat3: findCol(h,'Q46 -','[Materiais'), suporteMem3: findCol(h,'Q46 -','[Membros'),
+    satArea3: findCol(h,'Q48 -'),
+    motArea3: findCol(h,'Q50 -'),
+    reconArea3: findCol(h,'Q51 -'),
+    a4_conf_expor: findCol(h,'Q53 -','[Expor suas dificuldades'),
+    a4_conf_opAtiv: findCol(h,'Q53 -','[Opinar nas atividades'),
+    a4_conf_opDisc: findCol(h,'Q53 -','[Opinar nas discussões'),
+    a4_conf_ajuda: findCol(h,'Q53 -','[Pedir ajuda'),
+    relacArea3: findCol(h,'Q54 -'),
+    d55_alinhadas: findCol(h,'Q55 -','[Vejo que estão alinhadas'),
+    d55_sentido: findCol(h,'Q55 -','[Sinto que elas fazem sentido'),
+    d55_suporte: findCol(h,'Q55 -','[Tenho total suporte'),
+    d55_inovacao: findCol(h,'Q55 -','[Sinto que são focadas'),
+    d55_aprendizado: findCol(h,'Q55 -','[Acredito que contribuem'),
+    d55_expectativas: findCol(h,'Q55 -','[São alinhadas com as minhas'),
+
+    treinoQtd: findCol(h,'Q57 -','[Quantidade'), treinoPer: findCol(h,'Q57 -','[Periodicidade'),
+    treinoQual: findCol(h,'Q57 -','[Qualidade'), treinoApl: findCol(h,'Q57 -','[Aplicabilidade'),
+    oportunidades: findCol(h,'Q58 -'),
+    oportunidadesMelhoria: findCol(h,'Q58.2 -'),
+    confortoPropor: findCol(h,'Q59 -'),
+    integracao: findCol(h,'Q60 -'),
+    fb_recebo: findCol(h,'Q61 -','[Recebo feedbacks'),
+    fb_forneco: findCol(h,'Q61 -','[Busco fornecer'),
+    fb_uteis: findCol(h,'Q61 -','[Os feedbacks que recebo'),
+    fb_pratica: findCol(h,'Q61 -','[Procuro colocar'),
+    fb_momento: findCol(h,'Q61 -','[Considero que sei'),
+    motivacaoEvol: findCol(h,'Q62 -'),
+    motivosSaida: findCol(h,'Q62.2 -'),
+    temMentor: findCol(h,'Q63 -'),
+    primeiraMentoria: findCol(h,'Q63.1 -'),
+    freqMentoria: findCol(h,'Q63.2 -'),
+    mentoriaSatisf: findCol(h,'Q63.3 -'),
+    satisfGeral: findCol(h,'Q65 -'),
+
+    fat_trabalho: findCol(h,'Q64 -','[O trabalho em si'),
+    fat_crescimento: findCol(h,'Q64 -','[Oportunidades de crescimento'),
+    fat_treinamento: findCol(h,'Q64 -','[Oportunidades de treinamento'),
+    fat_reconhecimento: findCol(h,'Q64 -','[Reconhecimento'),
+    fat_lideranca: findCol(h,'Q64 -','[Relacionamento com a liderança'),
+    fat_membros: findCol(h,'Q64 -','[Relacionamento com os membros'),
+    fat_resultados: findCol(h,'Q64 -','[Resultados da empresa'),
+    fat_engajamento: findCol(h,'Q64 -','[Engajamento dos seus parceiros'),
+    fat_carga: findCol(h,'Q64 -','[Carga de trabalho'),
+
+    bem_tarefas: findCol(h,'Q56 -','[Tarefas domiciliares'), bem_conexao: findCol(h,'Q56 -','[Problemas de conexão'),
+    bem_sono: findCol(h,'Q56 -','[Desregulagem do sono'), bem_ansiedade: findCol(h,'Q56 -','[Ansiedade'),
+    bem_familia: findCol(h,'Q56 -','[Problemas familiares'), bem_pc: findCol(h,'Q56 -','[Computador ineficiente'),
+    bem_ambiente: findCol(h,'Q56 -','[Falta de ambiente'), bem_organizacao: findCol(h,'Q56 -','[Dificuldade de organização'),
+    bem_carga: findCol(h,'Q56 -','[Carga excessiva'), bem_transporte: findCol(h,'Q56 -','[Transporte'),
+    bem_lugar: findCol(h,'Q56 -','[Lugar de trabalho'),
+
+    nps_estudante: findCol(h,'Q66 -'),
+    nps_motivo: findCol(h,'Q66.2 -'),
+    nps_ace: findCol(h,'Q66.3 -'), nps_cce: findCol(h,'Q66.4 -'), nps_mnp: findCol(h,'Q66.5 -'),
+    nps_pro: findCol(h,'Q66.6 -'), nps_qab: findCol(h,'Q66.7 -'),
+    nps_cliente: findCol(h,'Q67 -')
+  };
+  return cycle;
+}
+
+function val(cycle,row,key){ var i = cycle.col[key]; if (i===undefined||i<0) return ''; return row[i]!==undefined ? row[i] : ''; }
+function num(cycle,row,key){ return likertValue(val(cycle,row,key)); }
+function numAny(cycle,row,keys){ for (var i=0;i<keys.length;i++){ var v = num(cycle,row,keys[i]); if (!isNaN(v)) return v; } return NaN; }
+
+function pame(cycle,row){ return (val(cycle,row,'pame')||'').trim(); }
+function cargo(cycle,row){
+  var v = (val(cycle,row,'cargo')||'').trim();
+  // Unifica variantes ("Diretor/a Executivo/a - Diretor/a de Projetos" / "- Outras Diretorias")
+  // em um único cargo "Diretor/a Executivo/a", conforme pedido: não diferenciar Diretor de Projetos dos demais.
+  if (v.indexOf('Diretor/a Executivo/a') === 0) return 'Diretor/a Executivo/a';
+  return v;
+}
+/* Família de cargo para o FILTRO das páginas de Coordenação/Geral: agrupa as variantes do
+   formulário (Consultor/a Comercial + Consultor/a de Projetos -> Consultor, etc.) nas famílias
+   pedidas: Trainee, Consultor, Gerente, Coordenador, Diretor (+ Suporte Tático, que fica fora
+   da lista nas páginas de Coordenação). */
+function cargoFamily(cycle,row){
+  var v = (val(cycle,row,'cargo')||'').trim();
+  if (!v) return '';
+  if (v.indexOf('Diretor/a Executivo/a') === 0) return 'Diretor';
+  if (v.indexOf('Coordenador') === 0) return 'Coordenador';
+  if (v.indexOf('Gerente') === 0) return 'Gerente';
+  if (v.indexOf('Consultor') === 0) return 'Consultor';
+  if (v.indexOf('Suporte Tático') !== -1) return 'Suporte Tático';
+  return v; // Trainee e qualquer valor novo ficam como estão
+}
+function rawArea(cycle,row){ return (val(cycle,row,'area')||'').trim().toUpperCase(); }
+function genero(cycle,row){ return shortLabel(val(cycle,row,'genero')); }
+function orientacao(cycle,row){ return shortLabel(val(cycle,row,'orientacao')); }
+function raca(cycle,row){
+  var v = val(cycle,row,'raca'); if (!v) return '';
+  v = shortLabel(v).trim().replace(/^Pessoa\s+/i,'');
+  return v ? v.charAt(0).toUpperCase()+v.slice(1) : '';
+}
+function direcionadoArea(cycle,row){ var v=(val(cycle,row,'direcionadoArea')||'').trim(); return v==='Não sou direcionado' ? '' : v; }
+
+/* área "primária" do respondente (Q2), usada para filtros e segmentações gerais (eNPS por área, etc.) */
+function area(cycle,row){ return rawArea(cycle,row); }
+function isComDirecionado(cycle,row){ return direcionadoArea(cycle,row) === 'Comercial'; }
+
+function effectiveCoordForAlignment(cycle,row){
+  var a = rawArea(cycle,row);
+  if (a === 'COMERCIAL'){ var c = (val(cycle,row,'coordNegocia')||'').trim().toUpperCase(); return COORD_LIST.indexOf(c)!==-1 ? c : null; }
+  return COORD_LIST.indexOf(a)!==-1 ? a : null;
+}
+/* Quem está avaliando (pra breakdowns "quem recomenda X"): uma das 6 coordenações, ou 'DE' —
+   a Diretoria Executiva também responde Q66.3-66.7 (recomendaria cada coordenação a um cliente),
+   mas o Q2 dela é "DE" (não uma coordenação), então sem isso ela ficava de fora do breakdown. */
+function evaluatorGroup(cycle,row){
+  var a = rawArea(cycle,row);
+  if (COORD_ALL.indexOf(a) !== -1) return a;
+  if (a.indexOf('DE') === 0) return 'DE';
+  return null;
+}
+
+/* diretoria efetiva (páginas de Diretoria): direcionado (exceto Comercial) > suporte tático (Q9) > diretor (Q4) */
+function diretoriaInfo(cycle,row){
+  var da = direcionadoArea(cycle,row);
+  if (da && da !== 'Comercial') return { diretoria: da, papel:'Direcionado' };
+  var c = cargo(cycle,row);
+  if (c.indexOf('Suporte Tático') !== -1) return { diretoria: (val(cycle,row,'diretoriaBloco3')||'').trim(), papel:'Suporte Tático' };
+  if (c.indexOf('Diretor/a Executivo/a') !== -1) return { diretoria: (val(cycle,row,'diretoriaDE')||'').trim(), papel:'Diretor/a' };
+  return { diretoria:'', papel:'' };
+}
+function dirVal(cycle,row,blocoKey,direcKey){
+  var info = diretoriaInfo(cycle,row);
+  if (info.papel === 'Direcionado') return direcKey ? num(cycle,row,direcKey) : NaN;
+  return num(cycle,row,blocoKey);
+}
+
+/* ============================= FILTERING ================================== */
+/* Cargo/Diretoria (origem) mudam de significado conforme o grupo de páginas atual:
+   - grupo 'coord': cargo() cru (Q3, já unificado) / area() (coordenação, Q2)
+   - grupo 'dir'  : diretoriaInfo().papel (Direcionado/Suporte Tático/Diretor/a) / diretoriaInfo().diretoria
+   - grupo 'missao': Cargo e PAME não se aplicam (ficam ocultos e neutralizados)
+   - grupo 'geral': Cargo/PAME normais; Coordenação/Diretoria ocultos (skipArea é usado nas queries) */
+function currentGroup(){ return GROUP_OF_PAGE[currentPage]; }
+function cargoValueFor(cycle,row){ var g=currentGroup(); return g==='dir' ? diretoriaInfo(cycle,row).papel : cargoFamily(cycle,row); }
+function areaOrDirValueFor(cycle,row){ var g=currentGroup(); return g==='dir' ? diretoriaInfo(cycle,row).diretoria : area(cycle,row); }
+/* Filtro de Coordenação: COM inclui também quem é "direcionado" a Comercial (a área primária
+   dessa pessoa é outra, ex.: ACE, mas ela integra o dia a dia de COM). Sem isso, COM ficava
+   praticamente vazio nos ciclos em que quase ninguém tem COMERCIAL como área primária. */
+function passesAreaFilter(cycle,row){
+  if (isSelected('area', area(cycle,row))) return true;
+  return !!(STATE.filters.area['COMERCIAL'] && isComDirecionado(cycle,row));
+}
+
+function uniqueVals(getter){
+  var set = {};
+  CYCLES.forEach(function(cfg){ var cycle = STATE.cycles[cfg.id]; if (!cycle) return;
+    cycle.rows.forEach(function(row){ var v = getter(cycle,row); if (v) set[v]=true; }); });
+  return Object.keys(set).sort();
+}
+function isSelected(filterName, value){
+  var f = STATE.filters[filterName];
+  var anyOn = Object.keys(f).some(function(k){return f[k];});
+  if (!anyOn) return true;
+  return !!f[value];
+}
+function selectedCount(filterName){ var f=STATE.filters[filterName]; return Object.keys(f).filter(function(k){return f[k];}).length; }
+function singleSelected(filterName){ var f=STATE.filters[filterName]; var keys=Object.keys(f).filter(function(k){return f[k];}); return keys.length===1 ? keys[0] : null; }
+
+function passesMultiFilter(raw, filterName){
+  // Para perguntas tipo checkbox (PCD, Neurodivergência) que podem ter vários valores na mesma célula.
+  var f = STATE.filters[filterName];
+  var anyOn = Object.keys(f).some(function(k){return f[k];});
+  if (!anyOn) return true;
+  if (!raw) return false; // filtro ativo mas essa linha/ciclo não tem dado pra essa pergunta -> não dá pra confirmar match
+  var parts = splitCheckboxDesc(raw);
+  return parts.some(function(p){ return !!f[p]; });
+}
+function passesFilters(cycle,row, opts){
+  opts = opts || {};
+  if (!isSelected('ciclo', cycle.id)) return false;
+  var grp = currentGroup();
+  if (grp !== 'missao' && !isSelected('pame', pame(cycle,row))) return false;
+  if (!opts.skipArea && grp==='coord' && !passesAreaFilter(cycle,row)) return false;
+  if (!opts.skipArea && grp==='dir' && !isSelected('diretoria', areaOrDirValueFor(cycle,row))) return false;
+  if (grp !== 'missao' && !isSelected('cargo', cargoValueFor(cycle,row))) return false;
+  // NOTE: genero/orient/raca só existem em alguns ciclos do PCO (por enquanto só Julho/26 tem o
+  // bloco de diversidade). isSelected() já trata "nenhum filtro ativo -> todo mundo passa"; quando
+  // um filtro ESTÁ ativo, linhas/ciclos sem resposta pra essa pergunta NÃO podem passar escondidas
+  // (misturaria respondentes "desconhecidos" numa visão demográfica específica), por isso não
+  // tratamos valor vazio como caso especial aqui.
+  if (!isSelected('genero', genero(cycle,row))) return false;
+  if (!isSelected('orient', orientacao(cycle,row))) return false;
+  if (!isSelected('raca', raca(cycle,row))) return false;
+  if (!passesMultiFilter(val(cycle,row,'pcd'), 'pcd')) return false;
+  if (!passesMultiFilter(val(cycle,row,'neuro'), 'neuro')) return false;
+  return true;
+}
+function eachFilteredRow(fn, opts){
+  CYCLES.forEach(function(cfg){ var cycle = STATE.cycles[cfg.id]; if (!cycle || cycle.error) return;
+    cycle.rows.forEach(function(row){ if (passesFilters(cycle,row,opts)) fn(cycle,row); }); });
+}
+function eachFilteredRowByCycle(cycleId, fn, opts){
+  var cycle = STATE.cycles[cycleId]; if (!cycle || cycle.error) return;
+  cycle.rows.forEach(function(row){ if (passesFilters(cycle,row,opts)) fn(cycle,row); });
+}
+
+/* --------- Faceted (cascading) option lists: opções de um filtro respeitam os OUTROS filtros
+   ativos no momento (ex.: selecionar o ciclo Julho/26 já esconde PAMEs que só existem em outros
+   ciclos). O próprio filtro é ignorado no cálculo das suas opções, senão marcar uma opção a
+   faria desaparecer da própria lista. */
+function passesFiltersExcept(cycle,row,exceptName){
+  var grp = currentGroup();
+  if (exceptName!=='ciclo' && !isSelected('ciclo', cycle.id)) return false;
+  if (exceptName!=='pame' && grp!=='missao' && !isSelected('pame', pame(cycle,row))) return false;
+  if (grp==='coord' && exceptName!=='area' && !passesAreaFilter(cycle,row)) return false;
+  if (grp==='dir' && exceptName!=='diretoria' && !isSelected('diretoria', areaOrDirValueFor(cycle,row))) return false;
+  if (exceptName!=='cargo' && grp!=='missao' && !isSelected('cargo', cargoValueFor(cycle,row))) return false;
+  if (exceptName!=='genero' && !isSelected('genero', genero(cycle,row))) return false;
+  if (exceptName!=='orient' && !isSelected('orient', orientacao(cycle,row))) return false;
+  if (exceptName!=='raca' && !isSelected('raca', raca(cycle,row))) return false;
+  if (exceptName!=='pcd' && !passesMultiFilter(val(cycle,row,'pcd'), 'pcd')) return false;
+  if (exceptName!=='neuro' && !passesMultiFilter(val(cycle,row,'neuro'), 'neuro')) return false;
+  return true;
+}
+function uniqueValsFacet(getter, exceptName){
+  var set = {};
+  CYCLES.forEach(function(cfg){ var cycle = STATE.cycles[cfg.id]; if (!cycle || cycle.error) return;
+    cycle.rows.forEach(function(row){ if (!passesFiltersExcept(cycle,row,exceptName)) return; var v=getter(cycle,row); if (v) set[v]=true; }); });
+  return Object.keys(set).sort();
+}
+function uniqueValsMultiFacet(getter, exceptName){
+  var set = {};
+  CYCLES.forEach(function(cfg){ var cycle = STATE.cycles[cfg.id]; if (!cycle || cycle.error) return;
+    cycle.rows.forEach(function(row){ if (!passesFiltersExcept(cycle,row,exceptName)) return;
+      var raw=getter(cycle,row); if(!raw) return;
+      splitCheckboxDesc(raw).forEach(function(s){ if (s) set[s]=true; }); }); });
+  return Object.keys(set).sort();
+}
+
+/* ============================= AGG HELPERS ================================ */
+function meanOf(values){
+  var v = values.filter(function(x){ return !isNaN(x); });
+  if (!v.length) return { avg:null, n:0 };
+  return { avg: v.reduce(function(a,b){return a+b;},0)/v.length, n:v.length };
+}
+function enpsOf(values){
+  var v = values.filter(function(x){ return !isNaN(x); });
+  if (!v.length) return { pct:null, n:0 };
+  var p4 = v.filter(function(x){return x===4;}).length/v.length;
+  var p12 = v.filter(function(x){return x===1||x===2;}).length/v.length;
+  return { pct: (p4-p12)*100, n:v.length };
+}
+function distributionOf(values){
+  var counts = {1:0,2:0,3:0,4:0}; var n=0;
+  values.forEach(function(x){ x=Math.round(x); if (x>=1&&x<=4){ counts[x]++; n++; } });
+  return { counts:counts, n:n };
+}
+function metricValue(keyFn){ var vals=[]; eachFilteredRow(function(c,r){ var v=keyFn(c,r); if(!isNaN(v)) vals.push(v); }); return meanOf(vals); }
+function metricAcrossCycles(keyFn, opts){
+  var out = {};
+  CYCLES.forEach(function(cfg){ var vals=[]; eachFilteredRowByCycle(cfg.id, function(c,r){ var v=keyFn(c,r); if(!isNaN(v)) vals.push(v); }, opts); out[cfg.label]=meanOf(vals); });
+  return out;
+}
+function freqOf(getterFn, splitComma, opts){
+  var counts = {}; var total = 0;
+  eachFilteredRow(function(cycle,row){
+    var raw = getterFn(cycle,row); if (!raw) return;
+    var parts = splitComma ? raw.split(',').map(function(s){return shortLabel(s);}).filter(Boolean) : [shortLabel(raw)];
+    parts.forEach(function(p){ counts[p] = (counts[p]||0)+1; });
+    total++;
+  }, opts);
+  return { counts:counts, total:total };
+}
+
+/* ============================= UI: FILTER CHIPS / DROPDOWNS ================= */
+function buildChipBox(containerId, filterName, values, displayFn){
+  var box = document.getElementById(containerId); if (!box) return;
+  box.innerHTML = '';
+  values.forEach(function(v){
+    var chip = document.createElement('div');
+    chip.className = 'chip' + (STATE.filters[filterName][v] ? ' on' : '');
+    chip.textContent = displayFn ? displayFn(v) : v;
+    chip.onclick = function(){ STATE.filters[filterName][v] = !STATE.filters[filterName][v]; renderAll(); };
+    box.appendChild(chip);
+  });
+}
+/* Dropdown de seleção múltipla: clica no botão, abre um painel com checkboxes das opções
+   disponíveis. Usado pros filtros de diversidade (Gênero/Orientação/Raça/PCD/Neuro), que têm
+   muitas opções e ficavam poluindo a barra quando eram chips sempre visíveis. */
+var UI = { suppressOutsideClose:false };
+function buildDropdownFilter(prefix, filterName, values, displayFn){
+  var btn = document.getElementById(prefix+'-btn');
+  var panel = document.getElementById(prefix+'-panel');
+  if (!btn || !panel) return;
+  var wasOpen = panel.classList.contains('open');
+  panel.innerHTML = '';
+  if (!values.length){
+    panel.innerHTML = '<div class="dd-empty">Sem opções para o filtro atual.</div>';
+  }
+  values.forEach(function(v){
+    var row = document.createElement('label');
+    row.className = 'dd-item';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!STATE.filters[filterName][v];
+    cb.onchange = function(){
+      UI.suppressOutsideClose = true;
+      STATE.filters[filterName][v] = cb.checked;
+      renderAll();
+    };
+    row.appendChild(cb);
+    row.appendChild(document.createTextNode(' ' + (displayFn ? displayFn(v) : v)));
+    panel.appendChild(row);
+  });
+  var selected = values.filter(function(v){ return STATE.filters[filterName][v]; });
+  btn.textContent = !selected.length ? 'Todos' : (selected.length===1 ? (displayFn?displayFn(selected[0]):selected[0]) : selected.length+' selecionados');
+  btn.onclick = function(e){
+    e.stopPropagation();
+    var isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.dropdown-panel.open').forEach(function(p){ p.classList.remove('open'); });
+    if (!isOpen) panel.classList.add('open');
+  };
+  if (wasOpen) panel.classList.add('open');
+}
+document.addEventListener('click', function(e){
+  if (UI.suppressOutsideClose){ UI.suppressOutsideClose = false; return; }
+  document.querySelectorAll('.dropdown-panel.open').forEach(function(p){
+    if (!p.parentElement.contains(e.target)) p.classList.remove('open');
+  });
+});
+
+function setupFilters(){
+  var grp = currentGroup();
+
+  var pames = uniqueValsFacet(function(c,r){return pame(c,r);}, 'pame');
+  var cargos = uniqueValsFacet(cargoValueFor, 'cargo');
+  if (grp === 'coord') cargos = cargos.filter(function(v){ return CARGO_EXCLUDE_COORD.indexOf(v)===-1; });
+  var areaOrDirVals = grp==='dir' ? DIRETORIAS.slice() : COORD_ALL.slice();
+  var generos = uniqueValsFacet(function(c,r){return genero(c,r);}, 'genero');
+  var orients = uniqueValsFacet(function(c,r){return orientacao(c,r);}, 'orient');
+  var racas = uniqueValsFacet(function(c,r){return raca(c,r);}, 'raca');
+  var pcds = uniqueValsMultiFacet(function(c,r){return val(c,r,'pcd');}, 'pcd');
+  var neuros = uniqueValsMultiFacet(function(c,r){return val(c,r,'neuro');}, 'neuro');
+
+  CYCLES.forEach(function(cfg){ if (STATE.filters.ciclo[cfg.id]===undefined) STATE.filters.ciclo[cfg.id]=true; });
+  buildChipBox('f-ciclo','ciclo', CYCLES.map(function(c){return c.id;}), function(id){ return CYCLES.filter(function(c){return c.id===id;})[0].label; });
+  buildChipBox('f-pame','pame', pames);
+  if (grp === 'dir'){
+    buildChipBox('f-area','diretoria', areaOrDirVals);
+  } else {
+    buildChipBox('f-area','area', areaOrDirVals, function(a){ return COORD_DISPLAY[a]; });
+  }
+  document.getElementById('f-cargo-label').textContent = grp==='dir' ? 'Cargo (papel na diretoria)' : 'Cargo';
+  buildChipBox('f-cargo','cargo', cargos, grp==='dir' ? function(p){ return p==='Diretor/a' ? 'Diretor' : p; } : null);
+  buildDropdownFilter('f-genero','genero', generos);
+  buildDropdownFilter('f-orient','orient', orients);
+  buildDropdownFilter('f-raca','raca', racas);
+  buildDropdownFilter('f-pcd','pcd', pcds);
+  buildDropdownFilter('f-neuro','neuro', neuros);
+
+  document.getElementById('resetFilters').onclick = function(){
+    ['pame','area','diretoria','cargo','genero','orient','raca','pcd','neuro'].forEach(function(f){ STATE.filters[f] = {}; });
+    renderAll();
+  };
+}
+
+/* ============================= CHART HELPERS =============================== */
+function mkChart(canvasId, cfg){
+  var ctx = document.getElementById(canvasId); if (!ctx) return null;
+  var chart = new Chart(ctx, cfg); STATE.charts.push(chart); return chart;
+}
+function hexToRgb(hex){
+  var h = String(hex||'').replace('#','');
+  if (h.length===3) h = h.split('').map(function(c){return c+c;}).join('');
+  var num = parseInt(h,16) || 0;
+  return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+}
+/* 4 tons (claro->escuro) de uma cor base, usados nos gráficos de pizza de distribuição 1-4 */
+function distShades(hex){
+  var c = hexToRgb(hex);
+  return [0.32,0.55,0.78,1].map(function(a){ return 'rgba('+c.r+','+c.g+','+c.b+','+a+')'; });
+}
+function meanBar(canvasId, labels, values, colors, opts){
+  opts = opts || {};
+  // Notas vão de 1 a 4 (nunca 0), então o eixo de valor começa em 1 pra não achatar as barras.
+  return mkChart(canvasId, {
+    type:'bar',
+    data:{ labels:labels, datasets:[{ label:'Média', data:values.map(function(v){return v!=null?Number(v.toFixed(2)):null;}), backgroundColor:colors }] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis: opts.horizontal?'y':'x',
+      scales: opts.horizontal ? { x:{ min:1, max:4 } } : { y:{ min:1, max:4 } },
+      plugins:{ legend:{ display:false } } }
+  });
+}
+function distBar(canvasId, dist, color){
+  var labels = ['Nota 1','Nota 2','Nota 3','Nota 4'];
+  var data = [dist.counts[1],dist.counts[2],dist.counts[3],dist.counts[4]];
+  return mkChart(canvasId, { type:'pie', data:{ labels:labels, datasets:[{ data:data, backgroundColor:distShades(color) }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:true, position:'right', labels:{boxWidth:10,font:{size:11}} } } } });
+}
+function freqBar(canvasId, freq, color, pct, top){
+  var entries = Object.keys(freq.counts).map(function(k){return [k,freq.counts[k]];}).sort(function(a,b){return b[1]-a[1];});
+  if (top) entries = entries.slice(0, top);
+  var labels = entries.map(function(e){ return e[0].length>30? e[0].slice(0,28)+'…' : e[0]; });
+  var data = entries.map(function(e){ return pct ? Math.round(1000*e[1]/(freq.total||1))/10 : e[1]; });
+  return mkChart(canvasId, { type:'bar', data:{ labels:labels, datasets:[{label:pct?'%':'Respostas', data:data, backgroundColor:color}] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      scales:{ x:{ beginAtZero:true, ticks: pct?{ callback:function(v){return v+'%';} }:undefined } },
+      plugins:{ legend:{display:false} } } });
+}
+function groupedBar(canvasId, labels, values, colors, opts){
+  opts = opts || {};
+  // quando é uma escala de nota 1-4 (opts.max===4), o eixo também começa em 1, não em 0
+  var scaleOpts = opts.max===4 ? { min: (opts.min!=null?opts.min:1), max:4 } : { beginAtZero:true, suggestedMax: opts.max };
+  return mkChart(canvasId, { type:'bar', data:{ labels:labels, datasets:[{ label:'Valor', data:values, backgroundColor:colors }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ y: scaleOpts },
+      plugins:{ legend:{display:false} } } });
+}
+function multiSeriesMeanBar(canvasId, groupLabels, series /* [{label,data,color}] */){
+  return mkChart(canvasId, { type:'bar', data:{ labels:groupLabels, datasets: series.map(function(s){return {label:s.label,data:s.data,backgroundColor:s.color};}) },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ min:1, max:4 } },
+      plugins:{ legend:{ display:true, position:'bottom', labels:{boxWidth:10,font:{size:11}} } } } });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function kpiCard(label, valueText, sub){
+  return '<div class="card kpi"><div class="label">'+label+'</div><div class="value">'+valueText+'</div><div class="sub">'+(sub||'')+'</div></div>';
+}
+function chartCard(canvasId, title, note, tall){
+  return '<div class="card chart-card"><h3>'+title+'</h3><p class="note">'+note+'</p><div class="chart-wrap'+(tall?' tall':'')+'"><canvas id="'+canvasId+'"></canvas></div></div>';
+}
+
+/* ============================= área / accent atual ========================= */
+function currentAreaColor(){ var s = singleSelected('area'); return s ? COORD_COLOR[s] : ORANGE; }
+function currentAreaLabel(){ var s = singleSelected('area'); return s ? COORD_DISPLAY[s] : 'Geral (todas as coordenações)'; }
+function pageHeader(title, desc, showAreaBadge){
+  var badge = showAreaBadge ? '<span class="area-badge" style="background:'+currentAreaColor()+'">'+currentAreaLabel()+'</span>' : '';
+  return '<h2 class="page-title">'+title+badge+'</h2><p class="page-desc">'+desc+'</p>';
+}
+
+/* ============================= PÁGINAS DE COORDENAÇÃO ======================= */
+/* Coleta valores de uma métrica de "área" respeitando o filtro de Coordenação atual:
+   - Se uma coordenação específica está selecionada (ex.: ACE), usa só quem tem Q2=ACE.
+   - Se COM está selecionada, usa quem tem Q2=COMERCIAL (bloco de área) MESCLADO com quem é
+     direcionado a Comercial (bloco de direcionado, direcKeyForCom) — só se direcKeyForCom existir.
+   - Em modo "Geral" (nenhuma coordenação específica), usa todo mundo com Q2 numa das 6
+     coordenações (cada pessoa conta 1x, pela sua área primária); direcionados a Comercial só
+     entram aqui se sua área primária NÃO for nenhuma das 6 (raro, mas evita ficarem de fora). */
+function collectAreaValues(bloco2Key, direcKeyForCom){
+  var single = singleSelected('area');
+  var vals = [];
+  eachFilteredRow(function(c,r){
+    var a = rawArea(c,r);
+    var isPrimaryMatch = single ? (a === single) : (COORD_ALL.indexOf(a) !== -1);
+    if (isPrimaryMatch){
+      var v = num(c,r,bloco2Key); if (!isNaN(v)) vals.push(v);
+    } else if ((!single || single==='COMERCIAL') && direcKeyForCom && isComDirecionado(c,r)){
+      var v2 = num(c,r,direcKeyForCom); if (!isNaN(v2)) vals.push(v2);
+    }
+  }, {skipArea:true});
+  return vals;
+}
+function areaMean(bloco2Key, direcKeyForCom){ return meanOf(collectAreaValues(bloco2Key, direcKeyForCom)); }
+function areaDist(bloco2Key, direcKeyForCom){ return distributionOf(collectAreaValues(bloco2Key, direcKeyForCom)); }
+
+var PAGES = {};
+
+PAGES['c-alinh'] = function(){
+  var isCom = singleSelected('area') === 'COMERCIAL';
+  var color = currentAreaColor();
+  var npsEstud = enpsOf((function(){ var vals=[]; eachFilteredRow(function(c,r){ var v=num(c,r,'nps_estudante'); if(!isNaN(v)) vals.push(v);}); return vals; })());
+
+  var html = pageHeader('Alinhamento','eNPS e alinhamento da coordenação selecionada. Use o filtro "Coordenação" para focar em uma área específica.', true)+
+    '<div class="grid kpis">'+
+      kpiCard('eNPS Estudantes', npsEstud.pct!=null? npsEstud.pct.toFixed(0)+'%':'—', npsEstud.n+' respostas · nota4% − (nota1+nota2)%')+
+    '</div>'+
+    '<div class="grid charts2">'+
+      chartCard('c1-nps-cliente', isCom?'eNPS Clientes — Fluxo (geral)':'eNPS Clientes', isCom?'COM não tem recomendação própria a clientes (Q66.x avalia as coordenações de projeto); aqui, o quanto cada área recomendaria a Fluxo para um cliente (Q67), em %.':'Quanto cada área avaliadora recomenda esta coordenação para clientes (Q66.x), em %.')+
+      (isCom ? chartCard('c1-alinh-com','Alinhamento das Coordenações com COM','Como cada coordenação avalia o alinhamento com Comercial (Q16), média 1–4.')
+             : chartCard('c1-alinh-cliente','Alinhamento com o Cliente','Média 1–4 (Q17).'))+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      (isCom ? '' : chartCard('c1-alinh-com','Alinhamento com Comercial','Média 1–4 (Q16).'))+
+      chartCard('c1-melhoria-com','Melhorias — Alinhamento com Comercial','Frequência de menções (Q16.2)'+(isCom?', sugeridas pelas outras coordenações.':'.'))+
+    '</div>'+
+    (isCom ? '' : '<div class="grid charts1" style="margin-top:14px;">'+chartCard('c1-melhoria-cliente','Melhorias — Alinhamento com o Cliente','Frequência de menções (Q17.2).')+'</div>');
+  document.getElementById('content').innerHTML = html;
+
+  // eNPS Clientes: se uma coordenação específica está selecionada, mostra breakdown por área avaliadora
+  // (incluindo a DE, que também recomenda cada coordenação a clientes); senão, compara as coordenações entre si
+  var single = singleSelected('area');
+  var evalGroups = COORD_ALL.concat(['DE']);
+  var evalLabels = evalGroups.map(function(a){return a==='DE'?'DE':COORD_DISPLAY[a];});
+  var evalColors = evalGroups.map(function(a){return a==='DE'?DE_COLOR:COORD_COLOR[a];});
+  function enpsByEvaluator(key){
+    var out = {};
+    evalGroups.forEach(function(a){
+      var vals=[]; eachFilteredRow(function(c,r){ if (evaluatorGroup(c,r)===a){ var v=num(c,r,key); if(!isNaN(v)) vals.push(v);} }, {skipArea:true});
+      out[a] = enpsOf(vals);
+    });
+    return out;
+  }
+  if (single && single!=='COMERCIAL'){
+    var keyMap = { ACE:'nps_ace', CCE:'nps_cce', MNP:'nps_mnp', PRO:'nps_pro', QAB:'nps_qab' };
+    var byEvalArea = enpsByEvaluator(keyMap[single]);
+    groupedBar('c1-nps-cliente', evalLabels, evalGroups.map(function(a){return byEvalArea[a].pct;}), evalColors, {});
+  } else if (!isCom) {
+    var byCoord = {};
+    var keys2 = { ACE:'nps_ace', CCE:'nps_cce', MNP:'nps_mnp', PRO:'nps_pro', QAB:'nps_qab' };
+    COORD_LIST.forEach(function(a){ var vals=[]; eachFilteredRow(function(c,r){ var v=num(c,r,keys2[a]); if(!isNaN(v)) vals.push(v); }); byCoord[a]=enpsOf(vals); });
+    groupedBar('c1-nps-cliente', COORD_LIST, COORD_LIST.map(function(a){return byCoord[a].pct;}), COORD_LIST.map(function(a){return COORD_COLOR[a];}), {});
+  } else {
+    // COM: página "espelho" — em vez de esconder tudo (o que deixava a página inicial em branco
+    // ao selecionar COM), mostra o quanto cada área recomendaria a Fluxo a um cliente (Q67),
+    // como cada coordenação avalia o alinhamento com COM (Q16) e as melhorias sugeridas (Q16.2).
+    var byEvalFluxo = enpsByEvaluator('nps_cliente');
+    groupedBar('c1-nps-cliente', evalLabels, evalGroups.map(function(a){return byEvalFluxo[a].pct;}), evalColors, {});
+    var byC2 = {}; COORD_LIST.forEach(function(a){ var vals=[]; eachFilteredRow(function(c,r){ if (effectiveCoordForAlignment(c,r)===a){ var v=num(c,r,'alinhComercial'); if(!isNaN(v)) vals.push(v);} }, {skipArea:true}); byC2[a]=meanOf(vals); });
+    groupedBar('c1-alinh-com', COORD_LIST, COORD_LIST.map(function(a){return byC2[a].avg;}), COORD_LIST.map(function(a){return COORD_COLOR[a];}), {max:4});
+    freqBar('c1-melhoria-com', freqOf(function(c,r){return val(c,r,'alinhComercialMelhoria');}, true, {skipArea:true}), color, false, 8);
+  }
+
+  if (!isCom){
+    meanBar('c1-alinh-cliente', [currentAreaLabel()], [areaAlignMean('alinhCliente').avg], [color]);
+    if (single){
+      var alComData = effectiveCoordMean('alinhComercial');
+      meanBar('c1-alinh-com', [currentAreaLabel()], [alComData.avg], [color]);
+    } else {
+      // Modo Geral: um gráfico só pode ter UM chart Chart.js por vez — antes disso chamava meanBar
+      // e groupedBar no mesmo canvas, o que quebrava (canvas já em uso) e deixava os cards
+      // seguintes (Melhorias) vazios também. Agora só o groupedBar roda aqui.
+      var byC = {}; COORD_LIST.forEach(function(a){ var vals=[]; eachFilteredRow(function(c,r){ if (effectiveCoordForAlignment(c,r)===a){ var v=num(c,r,'alinhComercial'); if(!isNaN(v)) vals.push(v);} }); byC[a]=meanOf(vals); });
+      groupedBar('c1-alinh-com', COORD_LIST, COORD_LIST.map(function(a){return byC[a].avg;}), COORD_LIST.map(function(a){return COORD_COLOR[a];}), {max:4});
+    }
+    freqBar('c1-melhoria-com', freqOf(function(c,r){return val(c,r,'alinhComercialMelhoria');}, true), color, false, 8);
+    freqBar('c1-melhoria-cliente', freqOf(function(c,r){return val(c,r,'alinhClienteMelhoria');}, true), color, false, 8);
+  }
+};
+function areaAlignMean(key){ var vals=[]; eachFilteredRow(function(c,r){ var v=num(c,r,key); if(!isNaN(v)) vals.push(v); }); return meanOf(vals); }
+function effectiveCoordMean(key){ var vals=[]; eachFilteredRow(function(c,r){ var v=num(c,r,key); if(!isNaN(v)) vals.push(v); }); return meanOf(vals); }
+
+PAGES['c-suporte'] = function(){
+  var color = currentAreaColor();
+  var html = pageHeader('Suporte e Conforto','Materiais, membros, conforto na área e motivos de saída.', true)+
+    '<div class="grid charts2">'+
+      chartCard('c2-mat','Suporte de Materiais','Distribuição das notas 1–4 (Q21/Q46).')+
+      chartCard('c2-mem','Suporte de Membros','Distribuição das notas 1–4 (Q21/Q46).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('c2-conforto','Conforto na Área','Média de cada uma das 4 opções (Q27/Q53).')+
+      chartCard('c2-saida','Motivos de Saída da Fluxo','Frequência de menções (Q62.2).')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  distBar('c2-mat', areaDist('suporteMat1','suporteMat3'), color);
+  distBar('c2-mem', areaDist('suporteMem1','suporteMem3'), color);
+  var confLabels = ['Expor dificuldades','Opinar em atividades','Opinar em discussões','Pedir ajuda'];
+  var confKeys = [['a2_conf_expor','a4_conf_expor'],['a2_conf_opAtiv','a4_conf_opAtiv'],['a2_conf_opDisc','a4_conf_opDisc'],['a2_conf_ajuda','a4_conf_ajuda']];
+  meanBar('c2-conforto', confLabels, confKeys.map(function(k){return areaMean(k[0],k[1]).avg;}), color);
+  freqBar('c2-saida', freqOf(function(c,r){return val(c,r,'motivosSaida');}, true), color, false, 8);
+};
+
+PAGES['c-ambiente'] = function(){
+  var color = currentAreaColor();
+  var html = pageHeader('Ambiente e Feedback','Satisfação, feedback e autoavaliação de desempenho.', true)+
+    '<div class="grid kpis">'+ kpiCard('Satisfação em trabalhar na Fluxo (Q65)', fmtAvg(metricValue(function(c,r){return num(c,r,'satisfGeral');})), '') +'</div>'+
+    '<div class="grid charts2">'+
+      chartCard('c3-fb','Avaliação de Feedbacks','Média de cada uma das 5 opções (Q61).')+
+      chartCard('c3-satrel','Satisfação e Relacionamento','Relacionamento c/ membros, satisfação dos parceiros e com a área (médias).')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('c3-desempenho','Autoavaliação de Desempenho na Fluxo','Distribuição das notas 1–4 (Q22).')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  var fbLabels=['Recebe feedback contínuo','Fornece feedback','Feedbacks úteis','Aplica na prática','Sabe o momento certo'];
+  var fbKeys=['fb_recebo','fb_forneco','fb_uteis','fb_pratica','fb_momento'];
+  meanBar('c3-fb', fbLabels, fbKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), color);
+
+  var srLabels=['Relacionamento c/ membros','Satisfação dos parceiros','Satisfação com a área'];
+  var srVals=[ areaMean('relacArea1','relacArea3').avg, areaMean('parceirosArea1',null).avg, areaMean('satArea1','satArea3').avg ];
+  meanBar('c3-satrel', srLabels, srVals, color);
+
+  var dist=[]; eachFilteredRow(function(c,r){ var v=num(c,r,'desempenho'); if(!isNaN(v)) dist.push(v); });
+  distBar('c3-desempenho', distributionOf(dist), color);
+};
+
+PAGES['c-motiv'] = function(){
+  var color = currentAreaColor();
+  var html = pageHeader('Motivação','Reuniões semanais, motivação na coordenação, reconhecimento e integração.', true)+
+    '<div class="grid charts2">'+
+      chartCard('c4-semanal','Motivação Gerada pelas Semanais','Média 1–4 (Q29/Q42).')+
+      chartCard('c4-semanal-melhoria','Melhorias para as Semanais','Frequência de menções.')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('c4-motiv-coord','Motivação para Atuar na Coordenação','Distribuição das notas 1–4 (Q25/Q38).')+
+      chartCard('c4-reconhec','Avaliação de Reconhecimento','Distribuição das notas 1–4 (Q26/Q39).')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('c4-integ','Avaliação de Integração','Distribuição das notas 1–4 (Q60 — pergunta geral sobre a Fluxo, segmentada pela coordenação atual).')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  meanBar('c4-semanal', [currentAreaLabel()], [areaMean('reuniaoArea1',null).avg], color);
+  freqBar('c4-semanal-melhoria', freqOf(function(c,r){return val(c,r,'reuniaoMelhoria1');}, true), color, false, 6);
+  distBar('c4-motiv-coord', areaDist('motArea1','motArea3'), color);
+  distBar('c4-reconhec', areaDist('reconArea1','reconArea3'), color);
+  var integ=[]; eachFilteredRow(function(c,r){ var v=num(c,r,'integracao'); if(!isNaN(v)) integ.push(v); });
+  distBar('c4-integ', distributionOf(integ), color);
+};
+
+PAGES['c-carreira'] = function(){
+  var color = currentAreaColor();
+  var html = pageHeader('Carreira e Cultura','Capacitações, crescimento profissional e fatores que afetam o trabalho.', true)+
+    '<div class="grid charts2">'+
+      chartCard('c5-treino','Avaliação de Capacitações','Média de cada opção (Q57).')+
+      chartCard('c5-cresc','Oportunidades de Crescimento Profissional','Média 1–4 (Q58).')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('c5-afeta','Fatores que Afetam o Trabalho','% de quem marcou "Sim" em cada fator (Q56, pergunta de múltipla marcação — os % não somam 100%).', true)+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  var trLabels=['Quantidade','Periodicidade','Qualidade','Aplicabilidade'];
+  var trKeys=['treinoQtd','treinoPer','treinoQual','treinoApl'];
+  meanBar('c5-treino', trLabels, trKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), color);
+  meanBar('c5-cresc', [currentAreaLabel()], [metricValue(function(c,r){return num(c,r,'oportunidades');}).avg], color);
+
+  var bemFactors = [['Ansiedade','bem_ansiedade'],['Carga excessiva','bem_carga'],['Desregulagem do sono','bem_sono'],['Dificuldade de organização','bem_organizacao'],
+    ['Tarefas domiciliares','bem_tarefas'],['Problemas familiares','bem_familia'],['Falta de ambiente próprio','bem_ambiente'],['Computador ineficiente','bem_pc'],
+    ['Problemas de conexão','bem_conexao'],['Transporte','bem_transporte'],['Lugar de trabalho','bem_lugar']];
+  var counts={}, total=0;
+  eachFilteredRow(function(c,r){ total++; bemFactors.forEach(function(bf){ if ((val(c,r,bf[1])||'').trim().toLowerCase()==='sim') counts[bf[0]]=(counts[bf[0]]||0)+1; }); });
+  freqBar('c5-afeta', {counts:counts,total:total}, color, true, 11);
+};
+
+PAGES['c-coords'] = function(){
+  var color = currentAreaColor();
+  var isCom = singleSelected('area') === 'COMERCIAL';
+  var critLabels=['Motiva a equipe','Inclui em decisões','Liderança','Relação c/ membros','Comunicação','Transparência'];
+  var critKeys=['coord74_motivar','coord74_inclusao','coord74_lideranca','coord74_relacao','coord74_comunicacao','coord74_transparencia'];
+  var html = pageHeader('Avaliação dos Coordenadores','Q74 (avaliada por quem tem coordenador direto na área) e melhorias sugeridas (Q75).'+(isCom?' Para COM, considera apenas quem responde diretamente sobre a coordenação comercial (Consultor/Gerente Comercial).':''), true)+
+    '<div class="grid charts2">'+
+      chartCard('c6-crit','Avaliação do(s) Coordenador(es)','Média de cada um dos 6 critérios.')+
+      chartCard('c6-melhoria','Melhorias para os Coordenadores','Frequência de menções, dentre as 6 opções.')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+  // Com COM selecionado, o filtro de área agora inclui os direcionados a Comercial — mas a
+  // avaliação de coordenadores (Q74/Q75) de um direcionado é sobre o coordenador da área
+  // PRIMÁRIA dele (ex.: ACE), não sobre COM. Por isso, aqui restringimos a quem é COMERCIAL puro.
+  meanBar('c6-crit', critLabels, critKeys.map(function(k){return metricValue(function(c,r){ if (isCom && rawArea(c,r)!=='COMERCIAL') return NaN; return num(c,r,k);}).avg;}), color);
+  freqBar('c6-melhoria', freqOf(function(c,r){ if (isCom && rawArea(c,r)!=='COMERCIAL') return ''; return val(c,r,'coord75_melhoria');}, true), color);
+};
+
+function fmtAvg(m){ return (m.avg!=null? m.avg.toFixed(2)+' / 4' : '—') + (m.n? ' <span style="font-size:11px;color:var(--muted);font-weight:400">('+m.n+' respostas)</span>' : ''); }
+
+/* ============================= PÁGINAS DE DIRETORIA ========================= */
+function dirMean(blocoKey, direcKey){ var vals=[]; eachFilteredRow(function(c,r){ if (rawArea(c,r)==='COMERCIAL') return; var v=dirVal(c,r,blocoKey,direcKey); if(!isNaN(v)) vals.push(v); }); return meanOf(vals); }
+function dirDist(blocoKey, direcKey){ var vals=[]; eachFilteredRow(function(c,r){ if (rawArea(c,r)==='COMERCIAL') return; var v=dirVal(c,r,blocoKey,direcKey); if(!isNaN(v)) vals.push(v); }); return distributionOf(vals); }
+function dirFreq(blocoKey){ var counts={},total=0; eachFilteredRow(function(c,r){ var raw=val(c,r,blocoKey); if(!raw) return; raw.split(',').forEach(function(p){var s=shortLabel(p); if(s) counts[s]=(counts[s]||0)+1;}); total++; }); return {counts:counts,total:total}; }
+
+PAGES['d-ambiente'] = function(){
+  var html = '<h2 class="page-title">Diretoria — Ambiente &amp; Reconhecimento</h2>'+
+    '<p class="page-desc">Direcionados, suporte tático e diretores/as — avaliação da própria diretoria. Filtre por Coordenação/Diretoria de referência e por Cargo (Direcionado, Suporte Tático, Diretor/a).</p>'+
+    '<div class="grid charts2">'+
+      chartCard('d1-acoes','Ações e Processos da Diretoria','Média de cada uma das 4 opções (Q32).')+
+      chartCard('d1-melhoria','Melhorias no Trabalho da Diretoria','Frequência das 4 opções (Q36).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('d1-mat','Suporte de Materiais','Distribuição das notas 1–4 (Q33/Q46).')+
+      chartCard('d1-mem','Suporte de Membros','Distribuição das notas 1–4 (Q33/Q46).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('d1-satrel','Satisfação e Relacionamento','Relacionamento c/ membros, satisfação dos parceiros e com a diretoria.')+
+      chartCard('d1-conforto','Conforto na Diretoria','Média de cada uma das 4 opções (Q40/Q53).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('d1-motiv','Motivação para Atuar na Diretoria','Média 1–4 (Q38/Q50).')+
+      chartCard('d1-reconhec','Avaliação de Reconhecimento','Distribuição das notas 1–4 (Q39/Q51).')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  var acoesLabels=['Mudanças claras','Definição clara dos focos','Dedicação aos planos de ação','Colaborei p/ resultados'];
+  var acoesKeys=['d_acoes_mudancas','d_acoes_definicao','d_acoes_planos','d_acoes_colaborei'];
+  meanBar('d1-acoes', acoesLabels, acoesKeys.map(function(k){return dirMean(k,null).avg;}), ORANGE);
+  freqBar('d1-melhoria', dirFreq('d_melhoria'), ORANGE, false, 4);
+  distBar('d1-mat', dirDist('suporteMat2','suporteMat3'), ORANGE);
+  distBar('d1-mem', dirDist('suporteMem2','suporteMem3'), ORANGE);
+
+  var srLabels=['Relacionamento c/ membros','Satisfação dos parceiros','Satisfação com a diretoria'];
+  var srVals=[dirMean('relacArea2','relacArea3').avg, dirMean('parceirosArea2',null).avg, dirMean('satArea2','satArea3').avg];
+  meanBar('d1-satrel', srLabels, srVals, ORANGE);
+
+  var cfLabels=['Expor dificuldades','Opinar em atividades','Opinar em discussões','Pedir ajuda'];
+  var cfKeys=[['a3_conf_expor','a4_conf_expor'],['a3_conf_opAtiv','a4_conf_opAtiv'],['a3_conf_opDisc','a4_conf_opDisc'],['a3_conf_ajuda','a4_conf_ajuda']];
+  meanBar('d1-conforto', cfLabels, cfKeys.map(function(k){return dirMean(k[0],k[1]).avg;}), ORANGE);
+
+  meanBar('d1-motiv', ['Motivação'], [dirMean('motArea2','motArea3').avg], ORANGE);
+  distBar('d1-reconhec', dirDist('reconArea2','reconArea3'), ORANGE);
+};
+
+PAGES['d-semanais'] = function(){
+  var html = '<h2 class="page-title">Diretoria — Semanais &amp; Avaliação</h2>'+
+    '<p class="page-desc">Reuniões semanais e avaliação geral da diretoria.</p>'+
+    '<div class="grid charts2">'+
+      chartCard('d2-semanal','Motivação Gerada pelas Semanais','Média 1–4 (Q42).')+
+      chartCard('d2-semanal-melhoria','Melhorias para as Semanais','Frequência das 4 opções (Q43).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('d2-avdir','Avaliação da Diretoria','Média de cada um dos 6 critérios (Q44) — respondida por suporte tático/diretor.')+
+      chartCard('d2-avacoes','Avaliação das Ações da Diretoria','Média de cada um dos 6 itens (Q55) — respondida por direcionados.')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  meanBar('d2-semanal', ['Semanais'], [ (function(){var vals=[]; eachFilteredRow(function(c,r){ if (rawArea(c,r)==='COMERCIAL') return; var v=num(c,r,'reuniaoArea2'); if(!isNaN(v)) vals.push(v);}); return meanOf(vals).avg;})() ], ORANGE);
+  freqBar('d2-semanal-melhoria', dirFreq('reuniaoMelhoria2'), ORANGE, false, 4);
+
+  var avdirLabels=['Capacidade técnica','Interpessoal','Foco no cliente','Engajamento','Alinhamento','Organização'];
+  var avdirKeys=['avTecnica2','avInterp2','avCliente2','avEngaj2','avAlinh2','avOrg2'];
+  meanBar('d2-avdir', avdirLabels, avdirKeys.map(function(k){var vals=[]; eachFilteredRow(function(c,r){if(rawArea(c,r)==='COMERCIAL')return; var v=num(c,r,k); if(!isNaN(v)) vals.push(v);}); return meanOf(vals).avg;}), ORANGE);
+
+  var avacoesLabels=['Objetivos estratégicos','Fazem sentido','Suporte da equipe','Foco em inovação','Aprendizado pessoal','Alinhadas c/ expectativas'];
+  var avacoesKeys=['d55_alinhadas','d55_sentido','d55_suporte','d55_inovacao','d55_aprendizado','d55_expectativas'];
+  meanBar('d2-avacoes', avacoesLabels, avacoesKeys.map(function(k){var vals=[]; eachFilteredRow(function(c,r){if(rawArea(c,r)==='COMERCIAL')return; var v=num(c,r,k); if(!isNaN(v)) vals.push(v);}); return meanOf(vals).avg;}), ORANGE);
+};
+
+/* ============================= PÁGINAS DO MISSÃO ============================= */
+PAGES['m-de'] = function(){
+  var html = '<h2 class="page-title">Diretoria Executiva (Missão)</h2>'+
+    '<p class="page-desc">Sem filtro de coordenação/diretoria. Metade autoavaliação da DE, metade avaliação da DE pelos demais membros.</p>'+
+    '<div class="grid charts2">'+
+      chartCard('mde-satisf','DE se autoavalia — Satisfação com a DE','Média 1–4 (Q5).')+
+      chartCard('mde-reconhec','DE se autoavalia — Reconhecimento do Trabalho','Distribuição 1–4 (Q6).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('mde-conforto','DE se autoavalia — Conforto com a DE','Média de cada uma das 4 opções (Q7).')+
+      chartCard('mde-relac','DE se autoavalia — Relacionamento com a DE','Média 1–4 (Q8).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('mde-rgs','DE é avaliada — Motivação Gerada pelas RGs','Média 1–4 (Q18).')+
+      chartCard('mde-av19','DE é avaliada — Avaliação da DE','Média de cada uma das 5 opções (Q19).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('mde-sat192','DE é avaliada — Satisfação por Diretoria','Média de satisfação com cada diretoria (Q19.2).')+
+      chartCard('mde-melhoria','DE é avaliada — Melhorias para a DE','Frequência das 6 opções (Q19.3).')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  meanBar('mde-satisf', ['Satisfação'], [metricValue(function(c,r){return num(c,r,'deSatisf');}).avg], ORANGE);
+  var dist=[]; eachFilteredRow(function(c,r){var v=num(c,r,'deReconhec'); if(!isNaN(v)) dist.push(v);});
+  distBar('mde-reconhec', distributionOf(dist), ORANGE);
+  var cfLabels=['Expor dificuldades','Opinar em atividades','Opinar em discussões','Pedir ajuda'];
+  var cfKeys=['de_conf_expor','de_conf_opAtiv','de_conf_opDisc','de_conf_ajuda'];
+  meanBar('mde-conforto', cfLabels, cfKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), ORANGE);
+  meanBar('mde-relac', ['Relacionamento'], [metricValue(function(c,r){return num(c,r,'deRelac');}).avg], ORANGE);
+
+  meanBar('mde-rgs', ['RGs'], [metricValue(function(c,r){return num(c,r,'de18_rgs');}).avg], ORANGE);
+  var av19Labels=['Motivação transmitida','Considera opiniões','Decisões compreensíveis','Relação c/ membros','Ações positivas'];
+  var av19Keys=['de19_motivacao','de19_opinioes','de19_decisoes','de19_relacao','de19_positivas'];
+  meanBar('mde-av19', av19Labels, av19Keys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), ORANGE);
+
+  var dirLabels=['Adm-Fin','Gente & Gestão','Mkt & Vendas','Projetos','Presidência'];
+  var dirKeys=['de192_admfin','de192_gg','de192_mkt','de192_proj','de192_pres'];
+  meanBar('mde-sat192', dirLabels, dirKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), DIR_PALETTE);
+  freqBar('mde-melhoria', freqOf(function(c,r){return val(c,r,'de193_melhoria');}, true), ORANGE, false, 6);
+};
+
+PAGES['m-tropa'] = function(){
+  var html = '<h2 class="page-title">Tropa (Missão)</h2>'+
+    '<p class="page-desc">Sem filtro de coordenação/diretoria. Metade autoavaliação da tropa (coordenadores de operações), metade avaliação dos coordenadores por todos os membros (sem segmentar por área).</p>'+
+    '<div class="grid charts2">'+
+      chartCard('mt-satisf','Tropa se autoavalia — Satisfação com a Tropa','Média 1–4 (Q12).')+
+      chartCard('mt-melhoria','Tropa se autoavalia — Melhorias de Suporte Mútuo','Frequência das 4 opções (Q13.2).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('mt-conforto','Tropa se autoavalia — Conforto com a Tropa','Média de cada uma das 4 opções (Q14).')+
+      chartCard('mt-relac','Tropa se autoavalia — Relacionamento com a Tropa','Média 1–4 (Q15).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('mt-coord','Tropa é avaliada — Avaliação dos Coordenadores','Média dos 6 critérios (Q74), agregada sem filtrar por coordenação.')+
+      chartCard('mt-coordmelh','Tropa é avaliada — Melhorias para os Coordenadores','Frequência das 6 opções (Q75), agregada sem filtrar por coordenação.')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  meanBar('mt-satisf', ['Satisfação'], [metricValue(function(c,r){return num(c,r,'tropaSatisf');}).avg], ORANGE);
+  freqBar('mt-melhoria', freqOf(function(c,r){return val(c,r,'tropaAuxilio');}, true), ORANGE, false, 4);
+  var cfLabels=['Expor dificuldades','Opinar em atividades','Opinar em discussões','Pedir ajuda'];
+  var cfKeys=['tropa_conf_expor','tropa_conf_opAtiv','tropa_conf_opDisc','tropa_conf_ajuda'];
+  meanBar('mt-conforto', cfLabels, cfKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}).avg;}), ORANGE);
+  meanBar('mt-relac', ['Relacionamento'], [metricValue(function(c,r){return num(c,r,'tropaRelac');}).avg], ORANGE);
+
+  // "sem filtro de coord": ignora o filtro de área para estas duas
+  var critLabels=['Motiva a equipe','Inclui em decisões','Liderança','Relação c/ membros','Comunicação','Transparência'];
+  var critKeys=['coord74_motivar','coord74_inclusao','coord74_lideranca','coord74_relacao','coord74_comunicacao','coord74_transparencia'];
+  meanBar('mt-coord', critLabels, critKeys.map(function(k){ var vals=[]; eachFilteredRow(function(c,r){var v=num(c,r,k); if(!isNaN(v)) vals.push(v);}, {skipArea:true}); return meanOf(vals).avg; }), ORANGE);
+  var freq75 = {counts:{},total:0};
+  eachFilteredRow(function(c,r){ var raw=val(c,r,'coord75_melhoria'); if(!raw) return; raw.split(',').forEach(function(p){var s=shortLabel(p); if(s) freq75.counts[s]=(freq75.counts[s]||0)+1;}); freq75.total++; }, {skipArea:true});
+  freqBar('mt-coordmelh', freq75, ORANGE, false, 6);
+};
+
+/* ============================= PÁGINAS GERAIS ================================ */
+PAGES['g-dev'] = function(){
+  var html = '<h2 class="page-title">Desenvolvimento &amp; Carreira</h2>'+
+    '<p class="page-desc">Sem filtro de coordenação — visão consolidada da Fluxo.</p>'+
+    '<div class="grid charts2">'+
+      chartCard('gd-treino','Avaliação das Capacitações','Média de cada uma das 4 opções (Q57).')+
+      chartCard('gd-cresc','Oportunidades de Crescimento Profissional','Média 1–4 (Q58).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('gd-cresc-melh','Melhorias p/ Oportunidades de Crescimento','Frequência das 6 opções (Q58.2).')+
+      chartCard('gd-conforto','Conforto para Propor Melhorias','Média 1–4 (Q59).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('gd-integ','Integração em Relação à Fluxo','Distribuição 1–4 (Q60).')+
+      chartCard('gd-fb','Avaliação dos Feedbacks','Média de cada uma das 5 opções (Q61).')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('gd-afeta','Fatores que Afetam o Trabalho','% de quem marcou "Sim" em cada fator (Q56, pergunta de múltipla marcação — os % não somam 100%).', true)+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  var trLabels=['Quantidade','Periodicidade','Qualidade','Aplicabilidade'];
+  var trKeys=['treinoQtd','treinoPer','treinoQual','treinoApl'];
+  meanBar('gd-treino', trLabels, trKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}, {skipArea:true}).avg;}), ORANGE);
+  meanBar('gd-cresc', ['Crescimento'], [metricValue(function(c,r){return num(c,r,'oportunidades');}, {skipArea:true}).avg], ORANGE);
+  freqBar('gd-cresc-melh', freqOf(function(c,r){return val(c,r,'oportunidadesMelhoria');}, true, {skipArea:true}), ORANGE, false, 6);
+  meanBar('gd-conforto', ['Conforto'], [metricValue(function(c,r){return num(c,r,'confortoPropor');}, {skipArea:true}).avg], ORANGE);
+  var integ=[]; eachFilteredRow(function(c,r){var v=num(c,r,'integracao'); if(!isNaN(v)) integ.push(v);}, {skipArea:true});
+  distBar('gd-integ', distributionOf(integ), ORANGE);
+  var fbLabels=['Recebe feedback contínuo','Fornece feedback','Feedbacks úteis','Aplica na prática','Sabe o momento certo'];
+  var fbKeys=['fb_recebo','fb_forneco','fb_uteis','fb_pratica','fb_momento'];
+  meanBar('gd-fb', fbLabels, fbKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}, {skipArea:true}).avg;}), ORANGE);
+
+  var bemFactors = [['Ansiedade','bem_ansiedade'],['Carga excessiva','bem_carga'],['Desregulagem do sono','bem_sono'],['Dificuldade de organização','bem_organizacao'],
+    ['Tarefas domiciliares','bem_tarefas'],['Problemas familiares','bem_familia'],['Falta de ambiente próprio','bem_ambiente'],['Computador ineficiente','bem_pc'],
+    ['Problemas de conexão','bem_conexao'],['Transporte','bem_transporte'],['Lugar de trabalho','bem_lugar']];
+  var counts={}, total=0;
+  eachFilteredRow(function(c,r){ total++; bemFactors.forEach(function(bf){ if ((val(c,r,bf[1])||'').trim().toLowerCase()==='sim') counts[bf[0]]=(counts[bf[0]]||0)+1; }); }, {skipArea:true});
+  freqBar('gd-afeta', {counts:counts,total:total}, ORANGE, true, 11);
+};
+
+PAGES['g-motiv'] = function(){
+  var html = '<h2 class="page-title">Motivação, Saída &amp; Mentorias</h2>'+
+    '<p class="page-desc">Sem filtro de coordenação.</p>'+
+    '<div class="grid charts2">'+
+      chartCard('gm-evol','Motivação: Antes de Entrar vs. Agora','Média 1 (menos motivado agora) a 4 (mais motivado agora) — Q62.')+
+      chartCard('gm-saida','Motivos de Saída da Fluxo','Frequência das opções (Q62.2).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('gm-mentoria1','1ª Mentoria Realizada','Distribuição Sim/Não (Q63.1).')+
+      chartCard('gm-mentoria2','Frequência de Mentorias','% de cada opção, dentre as 4 (Q63.2).')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('gm-mentoria3','Satisfação com as Mentorias','Média 1–4 (Q63.3).')+
+      chartCard('gm-satgeral','Satisfação em Trabalhar na Fluxo','Distribuição das notas 1–4 (Q65).')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('gm-satisf9','Satisfação no Trabalho — 9 fatores','Média de cada um dos 9 fatores (Q64).', true)+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  meanBar('gm-evol', ['Motivação'], [metricValue(function(c,r){return num(c,r,'motivacaoEvol');}, {skipArea:true}).avg], ORANGE);
+  freqBar('gm-saida', freqOf(function(c,r){return val(c,r,'motivosSaida');}, true, {skipArea:true}), ORANGE, false, 8);
+
+  var simNao = {sim:0, nao:0};
+  eachFilteredRow(function(c,r){ var v=(val(c,r,'primeiraMentoria')||'').trim().toLowerCase(); if (v==='sim') simNao.sim++; else if (v==='não'||v==='nao') simNao.nao++; }, {skipArea:true});
+  mkChart('gm-mentoria1', { type:'bar', data:{ labels:['Sim','Não'], datasets:[{label:'Respostas', data:[simNao.sim,simNao.nao], backgroundColor:[ORANGE,'#ccc']}] },
+    options:{ responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}}, plugins:{legend:{display:false}} } });
+  freqBar('gm-mentoria2', freqOf(function(c,r){return val(c,r,'freqMentoria');}, false, {skipArea:true}), ORANGE, true);
+  meanBar('gm-mentoria3', ['Mentorias'], [metricValue(function(c,r){return num(c,r,'mentoriaSatisf');}, {skipArea:true}).avg], ORANGE);
+  var sg=[]; eachFilteredRow(function(c,r){var v=num(c,r,'satisfGeral'); if(!isNaN(v)) sg.push(v);}, {skipArea:true});
+  distBar('gm-satgeral', distributionOf(sg), ORANGE);
+
+  var fatLabels=['O trabalho em si','Crescimento profissional','Oport. de treinamento','Reconhecimento','Relação c/ liderança','Relação c/ membros','Resultados da empresa','Engajamento dos parceiros','Carga de trabalho'];
+  var fatKeys=['fat_trabalho','fat_crescimento','fat_treinamento','fat_reconhecimento','fat_lideranca','fat_membros','fat_resultados','fat_engajamento','fat_carga'];
+  meanBar('gm-satisf9', fatLabels, fatKeys.map(function(k){return metricValue(function(c,r){return num(c,r,k);}, {skipArea:true}).avg;}), ORANGE, {horizontal:true});
+};
+
+PAGES['g-externa'] = function(){
+  var html = '<h2 class="page-title">Relação Externa</h2>'+
+    '<p class="page-desc">Sem filtro de coordenação — comparação entre áreas.</p>'+
+    '<div class="grid charts2">'+
+      chartCard('ge-nps-estud','eNPS Estudantes por Coordenação','% (nota4% − (nota1+nota2)%) — Q66, segmentado pela coordenação (ou DE) do respondente.')+
+      chartCard('ge-nps-motivo','Motivos para Não Recomendar','Frequência das opções (Q66.2), exceto "Marquei 4".')+
+    '</div>'+
+    '<div class="grid charts2" style="margin-top:14px;">'+
+      chartCard('ge-nps-cliente','eNPS Clientes por Coordenação','% de recomendação de cada coordenação para clientes (Q66.3–Q66.7) + geral da Fluxo (Q67).')+
+      chartCard('ge-alinh-cliente-melh','Melhorias — Alinhamento com o Cliente','Frequência das opções (Q17.2), sem filtro de coordenação.')+
+    '</div>'+
+    '<div class="grid charts1" style="margin-top:14px;">'+
+      chartCard('ge-alinh-com-melh','Melhorias — Alinhamento de COM com Projetos','Frequência das opções (Q16.2), sem filtro de coordenação.')+
+    '</div>';
+  document.getElementById('content').innerHTML = html;
+
+  var evalGroups = COORD_ALL.concat(['DE']);
+  var byArea = {};
+  evalGroups.forEach(function(a){ var vals=[]; eachFilteredRow(function(c,r){ if (evaluatorGroup(c,r)===a){ var v=num(c,r,'nps_estudante'); if(!isNaN(v)) vals.push(v);} }, {skipArea:true}); byArea[a]=enpsOf(vals); });
+  groupedBar('ge-nps-estud', evalGroups.map(function(a){return a==='DE'?'DE':COORD_DISPLAY[a];}), evalGroups.map(function(a){return byArea[a].pct;}), evalGroups.map(function(a){return a==='DE'?DE_COLOR:COORD_COLOR[a];}));
+
+  var motivoFreq = freqOf(function(cycle,row){
+    var i=-1; for (var k=0;k<cycle.headers.length;k++){ if (normH(cycle.headers[k]).indexOf('Q66.2 -')===0){ i=k; break; } }
+    var v = i>=0 ? row[i] : ''; return (v && v.trim()==='Marquei 4') ? '' : v;
+  }, true, {skipArea:true});
+  freqBar('ge-nps-motivo', motivoFreq, ORANGE, false, 8);
+
+  var keys2 = { ACE:'nps_ace', CCE:'nps_cce', MNP:'nps_mnp', PRO:'nps_pro', QAB:'nps_qab' };
+  var byCoord = {};
+  COORD_LIST.forEach(function(a){ var vals=[]; eachFilteredRow(function(c,r){ var v=num(c,r,keys2[a]); if(!isNaN(v)) vals.push(v); }, {skipArea:true}); byCoord[a]=enpsOf(vals); });
+  var geral=[]; eachFilteredRow(function(c,r){ var v=num(c,r,'nps_cliente'); if(!isNaN(v)) geral.push(v); }, {skipArea:true});
+  var labels = COORD_LIST.concat(['Fluxo (geral)']);
+  var vals = COORD_LIST.map(function(a){return byCoord[a].pct;}).concat([enpsOf(geral).pct]);
+  var colors = COORD_LIST.map(function(a){return COORD_COLOR[a];}).concat([ORANGE]);
+  groupedBar('ge-nps-cliente', labels, vals, colors);
+
+  freqBar('ge-alinh-cliente-melh', freqOf(function(c,r){return val(c,r,'alinhClienteMelhoria');}, true, {skipArea:true}), ORANGE, false, 4);
+  freqBar('ge-alinh-com-melh', freqOf(function(c,r){return val(c,r,'alinhComercialMelhoria');}, true, {skipArea:true}), ORANGE, false, 3);
+};
+
+/* ============================= NAV / FILTER BAR POR GRUPO =================== */
+var GROUP_OF_PAGE = {
+  'c-alinh':'coord','c-suporte':'coord','c-ambiente':'coord','c-motiv':'coord','c-carreira':'coord','c-coords':'coord',
+  'd-ambiente':'dir','d-semanais':'dir',
+  'm-de':'missao','m-tropa':'missao',
+  'g-dev':'geral','g-motiv':'geral','g-externa':'geral'
+};
+function applyFilterBarForGroup(group){
+  var showArea = (group==='coord' || group==='dir');
+  document.getElementById('f-area-block').style.display = showArea ? '' : 'none';
+  document.getElementById('f-area-label').textContent = group==='dir' ? 'Diretoria (origem)' : 'Coordenação';
+  document.getElementById('f-cargo-block').style.display = group==='missao' ? 'none' : '';
+  document.getElementById('f-pame-block').style.display = group==='missao' ? 'none' : '';
+}
+
+/* ============================= RENDER ORCHESTRATION ========================= */
+var currentPage = 'c-alinh';
+function renderAll(){
+  destroyCharts();
+  document.getElementById('content').innerHTML = '';
+  applyFilterBarForGroup(GROUP_OF_PAGE[currentPage]);
+  setupFilters(); // reconstrói opções (cascading) + troca Coordenação<->Diretoria e Cargo<->Papel conforme o grupo
+  var n = 0; eachFilteredRow(function(){ n++; });
+  document.getElementById('nCount').textContent = n + ' respostas na seleção atual';
+  (PAGES[currentPage]||PAGES['c-alinh'])();
+}
+function setupNav(){
+  document.querySelectorAll('.nav-btn').forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      currentPage = btn.getAttribute('data-page');
+      renderAll();
+    };
+  });
+}
+
+/* ============================= INIT ========================================= */
+function init(){
+  Promise.all(CYCLES.map(loadCycle)).then(function(results){
+    results.forEach(function(r){ STATE.cycles[r.id] = buildIndex(r); });
+    var footBits = results.map(function(r){ return r.label+': '+(r.error? 'erro ao carregar ('+r.error+')' : r.rows.length+' respostas'); });
+    // O formulário do PCO mudou levemente de ciclo para ciclo (perguntas adicionadas/removidas).
+    // Avisa aqui quais blocos usados no Dash não existem em cada ciclo, em vez de deixar isso silencioso.
+    var gapNotes = [];
+    results.forEach(function(r){
+      if (r.error) return;
+      var c = STATE.cycles[r.id].col;
+      var gaps = [];
+      if (c.genero === -1) gaps.push('diversidade (gênero/orientação/raça/PCD/neurodivergência)');
+      if (c.coord74_motivar === -1) gaps.push('avaliação de coordenadores (Q73–76)');
+      if (c.primeiraMentoria === -1) gaps.push('detalhamento de mentorias (Q63.1–63.4)');
+      if (gaps.length) gapNotes.push(r.label+' não tem: '+gaps.join('; '));
+    });
+    document.getElementById('footNote').innerHTML =
+      'Fonte: planilhas de respostas do Google Forms (PCO), lidas ao vivo a cada abertura/recarregamento. '+footBits.join(' · ')+
+      '. Médias em escala 1–4 calculadas apenas sobre quem respondeu cada pergunta (o formulário tem lógica condicional por cargo/área). '+
+      'Dados de COM mesclam respostas diretas da coordenação com respostas de quem é "direcionado" a Comercial.'+
+      (gapNotes.length ? ' <br>Atenção — o formulário variou entre ciclos: '+gapNotes.join(' · ')+
+        '. Filtros/gráficos desses blocos consideram só os ciclos que têm a pergunta (as pessoas dos ciclos sem a pergunta são excluídas quando um filtro desse tipo está ativo).' : '');
+    setupNav();
+    renderAll(); // renderAll() já chama setupFilters() internamente
+  }).catch(function(err){
+    document.getElementById('content').innerHTML = '<div class="empty">Não foi possível carregar os dados: '+String(err && err.message || err)+'</div>';
+  });
+}
+if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+
+})();
+</script>
+</body>
+</html>
